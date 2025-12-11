@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from schemas import UserOut
+from ..schemas import UserOut
 
 class PostModel(BaseModel):
     title: str | None = None
