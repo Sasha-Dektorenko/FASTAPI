@@ -1,15 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from ..schemas import PostModel, PostOut, PostPatch, Posts
 from ..database import SessionDep
-from ..models import Post
-from sqlalchemy.orm import Session
+from ..services import PostService
 
 post_router = APIRouter(prefix = "/api/v1/posts")
 
+
 @post_router.get("/{post_id}", response_model= PostOut)
 async def get_post(post_id: int, db: SessionDep):
-    post = db.get(Post, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail ="Post doesn't exist")
-    return post
+    try:
+        post = PostService.get_post_by_id(db, post_id)
+        return post
+    except HTTPException as e:
+        raise e
+    
 
