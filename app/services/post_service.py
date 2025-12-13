@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from ..schemas import PostOut, PostModel, Posts, PostForList, UserOut
+from ..schemas import PostOut, PostModel, Posts, UserOut
 from ..repositories import PostsRepository, UserRepository
+from ..models import Post
 
 
 class PostService:
@@ -18,17 +19,16 @@ class PostService:
         user = UserRepository.get_user_by_id(db, user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User doesn't exist")
-        author = UserOut.model_validate(user)
+        
         
         posts = PostsRepository.select_all_posts(db, offset, limit)
         total = len(posts)
-        posts = [PostForList.model_validate(post) for post in posts]
+        posts = [PostOut.model_validate(post) for post in posts]
 
         return Posts(
             total = total, 
             offset = offset,
             limit = limit,
-            author= author,
             posts = posts,    
         )
         
@@ -38,7 +38,18 @@ class PostService:
         if not user:
             raise HTTPException(status_code=404, detail="User doesn't exist")
         
-        post = PostModel(title=post_data.title,
-                         content=post_data.content,)
+        post = PostsRepository.get_post_by_title(db, post_data.title)
 
+        post = Post(
+            title=post_data.title,
+            content=post_data.content,
+            users = [user]
+            )
+        
         return PostsRepository.create_post(db, post)
+
+            
+        
+        
+
+        

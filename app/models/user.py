@@ -2,6 +2,7 @@ from datetime import datetime
 from ..database import Base
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from ..models.association_table import association_table
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING: 
@@ -17,7 +18,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
-    posts: Mapped[list["Post"]] = relationship(back_populates="author") 
+    posts: Mapped[list["Post"]] = relationship(secondary=association_table,back_populates="users") 
 
     @property
     def mask_password(self):

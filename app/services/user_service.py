@@ -2,6 +2,7 @@ from ..schemas import UserOut, Users, UserModel, UserPatch
 from ..repositories import UserRepository
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from ..models import User
 
 
 
@@ -26,14 +27,17 @@ class UserService:
         )
     
     @staticmethod
-    def create_user(db: Session, user: UserModel) -> UserOut:
-        exists = UserRepository.get_user_by_username(db, user.username)
+    def create_user(db: Session, user_data: UserModel) -> UserOut:
+        exists = UserRepository.get_user_by_username(db, user_data.username)
         if exists:
             raise HTTPException(status_code=400, detail="User with this username already exists")
     
-        user = UserModel(fullname=user.fullname,
-                 username = user.username, 
-                 password = user.password)
+        user = User(
+                fullname=user_data.fullname,
+                username = user_data.username, 
+                password = user_data.password,
+                )
+        
         return UserRepository.create_user(db, user)
     
     @staticmethod

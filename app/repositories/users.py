@@ -16,7 +16,7 @@ class UserRepository:
         return users
     
     @staticmethod
-    def create_user(db: Session, user: UserModel) -> UserOut:
+    def create_user(db: Session, user: User) -> UserOut:
         db.add(user)
         db.commit()
         db.refresh(user)
