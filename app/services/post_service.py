@@ -40,6 +40,10 @@ class PostService:
         
         post = PostsRepository.get_post_by_title(db, post_data.title)
 
+        if post:
+            PostsRepository.update_post_users(db, post, user)
+            return PostOut.model_validate(post)
+
         post = Post(
             title=post_data.title,
             content=post_data.content,

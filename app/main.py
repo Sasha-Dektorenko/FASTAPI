@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from .routes import user_router, post_router
 from .database import Base, engine
 from .models import User
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 

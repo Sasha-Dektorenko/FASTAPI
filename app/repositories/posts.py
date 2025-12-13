@@ -1,6 +1,6 @@
 from sqlalchemy import select
-from ..models import Post
-from ..schemas import PostOut, PostModel
+from ..models import Post, User
+from ..schemas import PostOut
 from typing import Sequence
 from sqlalchemy.orm import Session
 
@@ -35,6 +35,13 @@ class PostsRepository:
     def update_post(db: Session, post: Post, new_data: dict) -> PostOut:
         for key, value in new_data.items():
             setattr(post, key, value)
+        db.commit()
+        db.refresh(post)
+        return PostOut.model_validate(post)
+    
+    @staticmethod
+    def update_post_users(db: Session, post: Post, user: User) -> PostOut:
+        post.users.append(user)
         db.commit()
         db.refresh(post)
         return PostOut.model_validate(post)
