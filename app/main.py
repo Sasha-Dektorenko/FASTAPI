@@ -1,8 +1,13 @@
 from fastapi import FastAPI
 from .routes import user_router, post_router
 from .database import Base, engine
-from .models import User
 from dotenv import load_dotenv
+from .core.exc_handler import register_exception_handlers
+import logging
+
+
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -12,6 +17,7 @@ Base.metadata.create_all(engine)
 
 app.include_router(user_router)
 app.include_router(post_router)
+
 
 
 
