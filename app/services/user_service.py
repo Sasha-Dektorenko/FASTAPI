@@ -3,7 +3,7 @@ from ..repositories import UserRepository
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from ..models import User
-from ..core.exceptions import BaseAppException, NotFoundException, ConflictException
+from ..core.exceptions import BaseAppException, NotFoundException, ConflictException, ValidationException
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class UserService:
         except NotFoundException:
             raise
         except Exception as e:
-            raise BaseAppException(f"Unexpected database error occured while fetching user by ID: {user_id}") from e
+            raise BaseAppException(f"Unexpected internal error occured while fetching user by ID: {user_id}") from e
 
     @staticmethod
     def get_users(db: Session, offset: int, limit: int) -> Users:
@@ -35,10 +35,8 @@ class UserService:
                 limit = limit,
                 data = users 
             )
-        except NotFoundException:
-            raise
         except Exception as e:
-            raise BaseAppException("Unexpected database error occured while fetching users") from e
+            raise BaseAppException("Unexpected internal error occured while fetching users") from e
     
     @staticmethod
     def create_user(db: Session, user_data: UserModel) -> UserOut:
@@ -48,15 +46,17 @@ class UserService:
             if exists:
                 raise ConflictException("User with the same username already exists")
         except Exception as e:
-            raise BaseAppException("Unexpected database error occured while checking for existing username") from e
-    
-        user = User(
-                fullname=user_data.fullname,
-                username = user_data.username, 
-                password = user_data.password,
-                )
+            raise BaseAppException("Unexpected internal error occured while checking for existing username") from e
+        try: 
+            user = User(
+                    fullname=user_data.fullname,
+                    username = user_data.username, 
+                    password = user_data.password,
+                    )
         
-        return UserRepository.create_user(db, user)
+            return UserRepository.create_user(db, user)
+        except Exception as e:
+            raise BaseAppException("Unexpected internal error occured while creating user") from e
     
     @staticmethod
     def update_user(db: Session, user_id: int, user_data: UserPatch) -> UserOut:
@@ -66,8 +66,11 @@ class UserService:
         except NotFoundException:
             raise
         except Exception as e:
-            raise BaseAppException(f"Unexpected database error occured while fetching user by ID: {user_id}") from e
+            raise BaseAppException(f"Unexpected internal error occured while fetching user by ID: {user_id}") from e
         
-        new_data = user_data.model_dump(exclude_unset=True)
+        try:
+            new_data = user_data.model_dump(exclude_unset=True)
+            return UserRepository.update_user(db, user, new_data)
+        except Exception as e:
+            raise BaseAppException("Unexpected internal error occured while updating user") from e
         
-        return UserRepository.update_user(db, user, new_data)

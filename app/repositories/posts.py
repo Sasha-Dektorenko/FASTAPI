@@ -32,8 +32,6 @@ class PostsRepository:
     def select_all_posts(db: Session, offset: int, limit: int) -> Sequence[Post]:
         stmt = select(Post).offset(offset).limit(limit)
         posts = db.scalars(stmt).all()
-        if not posts:
-            raise NotFoundException("No posts found")
         return posts
         
         

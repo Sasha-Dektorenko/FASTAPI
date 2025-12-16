@@ -17,8 +17,6 @@ class UserRepository:
     def select_all_users(db: Session, offset: int, limit: int) -> Sequence[User]:
         stmt = select(User).offset(offset).limit(limit)
         users = db.scalars(stmt).all()
-        if not users:
-            raise NotFoundException("No users found")
         return users
        
         

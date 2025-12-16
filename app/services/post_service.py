@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from ..schemas import PostOut, PostModel, Posts, UserOut
 from ..repositories import PostsRepository, UserRepository
 from ..models import Post
-from ..core.exceptions import BaseAppException, NotFoundException
+from ..core.exceptions import BaseAppException, NotFoundException, ValidationException
 import logging
 
 
@@ -19,7 +19,7 @@ class PostService:
         except BaseAppException as e:
             raise 
         except Exception as e:
-            raise BaseAppException(f"Unexpected database error occured while fetching post by ID: {post_id}") from e
+            raise BaseAppException(f"Unexpected internal error occured while fetching post by ID: {post_id}") from e
     
     
     @staticmethod
@@ -30,7 +30,7 @@ class PostService:
         except NotFoundException:
             raise 
         except Exception as e:
-            raise BaseAppException(f"Unexpected database error occured while fetching user by ID: {user_id}") from e
+            raise BaseAppException(f"Unexpected internal error occured while fetching user by ID: {user_id}") from e
         
         try:
             logger.info("Fetching posts from database")
@@ -44,10 +44,8 @@ class PostService:
                 limit = limit,
                 posts = posts,    
             )
-        except NotFoundException:
-            raise
         except Exception as e:
-            raise BaseAppException("Unexpected database error occured while fetching posts") from e
+            raise BaseAppException("Unexpected error occured while fetching posts") from e
         
     @staticmethod
     def create_post(db: Session, user_id: int, post_data: PostModel) -> PostOut:
@@ -57,22 +55,24 @@ class PostService:
         except NotFoundException:
             raise 
         except Exception as e:
-            raise BaseAppException(f"Unexpected database error occured while fetching user by ID: {user_id}") from e
+            raise BaseAppException(f"Unexpected error occured while fetching user by ID: {user_id}") from e
         
-        
-        post = PostsRepository.get_post_by_title(db, post_data.title)
+        try:
+            post = PostsRepository.get_post_by_title(db, post_data.title)
 
-        if post:
-            PostsRepository.update_post_users(db, post, user)
-            return PostOut.model_validate(post)
+            if post:
+                PostsRepository.update_post_users(db, post, user)
+                return PostOut.model_validate(post)
 
-        post = Post(
-            title=post_data.title,
-            content=post_data.content,
-            users = [user]
-            )
+            post = Post(
+                title=post_data.title,
+                content=post_data.content,
+                users = [user]
+                )
         
-        return PostsRepository.create_post(db, post)
+            return PostsRepository.create_post(db, post)
+        except Exception as e:
+            raise BaseAppException("Unexpected internal error occured while creating post") from e
 
             
         
