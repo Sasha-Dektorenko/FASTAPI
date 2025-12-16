@@ -20,7 +20,7 @@ class UserService:
         except NotFoundException:
             raise
         except Exception as e:
-            raise BaseAppException(f"Unexpected error occured while fetching user by ID: {user_id}") from e
+            raise BaseAppException(f"Unexpected database error occured while fetching user by ID: {user_id}") from e
 
     @staticmethod
     def get_users(db: Session, offset: int, limit: int) -> Users:
@@ -38,7 +38,7 @@ class UserService:
         except NotFoundException:
             raise
         except Exception as e:
-            raise BaseAppException("Unexpected error occured while fetching users") from e
+            raise BaseAppException("Unexpected database error occured while fetching users") from e
     
     @staticmethod
     def create_user(db: Session, user_data: UserModel) -> UserOut:
@@ -48,7 +48,7 @@ class UserService:
             if exists:
                 raise ConflictException("User with the same username already exists")
         except Exception as e:
-            raise BaseAppException("Unexpected error occured while checking for existing username") from e
+            raise BaseAppException("Unexpected database error occured while checking for existing username") from e
     
         user = User(
                 fullname=user_data.fullname,
@@ -66,7 +66,7 @@ class UserService:
         except NotFoundException:
             raise
         except Exception as e:
-            raise BaseAppException(f"Unexpected error occured while fetching user by ID: {user_id}") from e
+            raise BaseAppException(f"Unexpected database error occured while fetching user by ID: {user_id}") from e
         
         new_data = user_data.model_dump(exclude_unset=True)
         

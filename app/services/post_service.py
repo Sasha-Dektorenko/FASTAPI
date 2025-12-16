@@ -19,7 +19,7 @@ class PostService:
         except BaseAppException as e:
             raise 
         except Exception as e:
-            raise BaseAppException(f"Unexpected error occured while fetching post by ID: {post_id}") from e
+            raise BaseAppException(f"Unexpected database error occured while fetching post by ID: {post_id}") from e
     
     
     @staticmethod
@@ -30,7 +30,7 @@ class PostService:
         except NotFoundException:
             raise 
         except Exception as e:
-            raise BaseAppException(f"Unexpected error occured while fetching user by ID: {user_id}") from e
+            raise BaseAppException(f"Unexpected database error occured while fetching user by ID: {user_id}") from e
         
         try:
             logger.info("Fetching posts from database")
@@ -47,7 +47,7 @@ class PostService:
         except NotFoundException:
             raise
         except Exception as e:
-            raise BaseAppException("Unexpected error occured while fetching posts") from e
+            raise BaseAppException("Unexpected database error occured while fetching posts") from e
         
     @staticmethod
     def create_post(db: Session, user_id: int, post_data: PostModel) -> PostOut:
@@ -57,7 +57,8 @@ class PostService:
         except NotFoundException:
             raise 
         except Exception as e:
-            raise BaseAppException(f"Unexpected error occured while fetching user by ID: {user_id}") from e
+            raise BaseAppException(f"Unexpected database error occured while fetching user by ID: {user_id}") from e
+        
         
         post = PostsRepository.get_post_by_title(db, post_data.title)
 

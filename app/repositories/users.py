@@ -15,14 +15,12 @@ logger = logging.getLogger(__name__)
 class UserRepository:
     @staticmethod
     def select_all_users(db: Session, offset: int, limit: int) -> Sequence[User]:
-        try:
-            stmt = select(User).offset(offset).limit(limit)
-            users = db.scalars(stmt).all()
-            if not users:
-                raise NotFoundException("No users found")
-            return users
-        except Exception as e:
-            raise BaseAppException("Database error occured while fetching all users") from e
+        stmt = select(User).offset(offset).limit(limit)
+        users = db.scalars(stmt).all()
+        if not users:
+            raise NotFoundException("No users found")
+        return users
+       
         
     @staticmethod
     def create_user(db: Session, user: User) -> UserOut:
@@ -33,22 +31,17 @@ class UserRepository:
     
     @staticmethod
     def get_user_by_username(db: Session, username: str) -> User | None:
-        try: 
-            stmt = select(User).where(User.username == username)
-            user = db.scalars(stmt).first()
-            return user if user else None
-        except Exception as e:
-            raise BaseAppException("Database error occured while fetching user by username") from e
+        stmt = select(User).where(User.username == username)
+        user = db.scalars(stmt).first()
+        return user if user else None
+        
     
     @staticmethod
     def get_user_by_id(db: Session, user_id: int) -> User:
-        try:
-            user = db.get(User, user_id)
-            if not user:
-                raise NotFoundException("User not found")
-            return user 
-        except Exception as e:
-            raise BaseAppException("Database error occured while fetching user by ID") from e
+        user = db.get(User, user_id)
+        if not user:
+            raise NotFoundException("User not found")
+        return user 
         
     @staticmethod
     def update_user(db: Session, user: User, new_data: dict) -> UserOut:
