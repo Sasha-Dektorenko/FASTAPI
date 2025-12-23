@@ -3,38 +3,34 @@ from ..schemas import PostOut, PostModel, Posts, UserOut
 from ..repositories import PostsRepository, UserRepository
 from ..models import Post
 from ..core.exceptions import BaseAppException, NotFoundException, ValidationException
+from ..database import get_uow, SessionDep
 import logging
 
 
 logger = logging.getLogger(__name__)
 
+def get_post_service(db: SessionDep) -> "PostService":
+    return PostService(db)
+
 
 class PostService:
-    @staticmethod
-    def get_post_by_id(db: Session, post_id: int) -> PostOut:
-        try:
+    def __init__(self, db: Session):
+        self.db = db
+
+    
+    def get_post_by_id(self, post_id: int) -> PostOut:
+        with get_uow(self.db) as uow:
             logger.info(f"Fetching post by ID: {post_id}")
-            post = PostsRepository.get_post_by_id(db, post_id)
+            post = uow.post_repo.get_post_by_id(post_id)
             return post
-        except BaseAppException as e:
-            raise 
-        except Exception as e:
-            raise BaseAppException(f"Unexpected internal error occured while fetching post by ID: {post_id}") from e
-    
-    
-    @staticmethod
-    def get_posts(db: Session, user_id: int, offset: int, limit: int) -> Posts:
-        try:
-            logger.info("Fetching user by ID before fetching posts")
-            user = UserRepository.get_user_by_id(db, user_id)
-        except NotFoundException:
-            raise 
-        except Exception as e:
-            raise BaseAppException(f"Unexpected internal error occured while fetching user by ID: {user_id}") from e
         
-        try:
+    def get_posts(self, user_id: int, offset: int, limit: int) -> Posts:
+        with get_uow(self.db) as uow:
+            logger.info("Fetching user by ID before fetching posts")
+            user = uow.user_repo.get_user_by_id(user_id)
+        
             logger.info("Fetching posts from database")
-            posts = PostsRepository.select_all_posts(db, offset, limit)
+            posts = uow.post_repo.select_all_posts(offset, limit)
             total = len(posts)
             posts = [PostOut.model_validate(post) for post in posts]
 
@@ -44,25 +40,20 @@ class PostService:
                 limit = limit,
                 posts = posts,    
             )
-        except Exception as e:
-            raise BaseAppException("Unexpected error occured while fetching posts") from e
         
-    @staticmethod
-    def create_post(db: Session, user_id: int, post_data: PostModel) -> PostOut:
-        try:
+        
+    
+    def create_post(self, user_id: int, post_data: PostModel) -> PostOut:
+        with get_uow(self.db) as uow:
             logger.info("Fetching user by ID before creating post")
-            user = UserRepository.get_user_by_id(db, user_id)
-        except NotFoundException:
-            raise 
-        except Exception as e:
-            raise BaseAppException(f"Unexpected error occured while fetching user by ID: {user_id}") from e
-        
-        try:
-            post = PostsRepository.get_post_by_title(db, post_data.title)
+            user = uow.user_repo.get_user_by_id(user_id)
+
+            logger.info("Checking if post with the same title exists")
+            post = uow.post_repo.get_post_by_title(post_data.title)
 
             if post:
-                PostsRepository.update_post_users(db, post, user)
-                return PostOut.model_validate(post)
+                return uow.post_repo.update_post_users(post, user)
+                 
 
             post = Post(
                 title=post_data.title,
@@ -70,9 +61,8 @@ class PostService:
                 users = [user]
                 )
         
-            return PostsRepository.create_post(db, post)
-        except Exception as e:
-            raise BaseAppException("Unexpected internal error occured while creating post") from e
+            return uow.post_repo.create_post(post)
+        
 
             
         

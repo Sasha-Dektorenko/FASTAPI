@@ -10,7 +10,6 @@ class UserOut(BaseModel):
     id: int
     fullname: str
     username: str
-    mask_password: str
     created_at: datetime
     updated_at: datetime
     model_config = {"from_attributes": True}

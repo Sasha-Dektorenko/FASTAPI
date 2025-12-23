@@ -1,32 +1,32 @@
 from ..schemas import UserOut, Users, UserModel, UserPatch
-from ..repositories import UserRepository
-from sqlalchemy.orm import Session
-from fastapi import HTTPException
 from ..models import User
-from ..core.exceptions import BaseAppException, NotFoundException, ConflictException, ValidationException
+from ..core import BaseAppException, NotFoundException, ConflictException, ValidationException, hash_password
+from ..database import get_uow, SessionDep
+from sqlalchemy.orm import Session
 import logging
 
 logger = logging.getLogger(__name__)
 
-
+def get_user_service(db: SessionDep) -> "UserService":
+    return UserService(db)
 
 class UserService:
-    @staticmethod
-    def get_user_by_id(db: Session, user_id: int) -> UserOut | None:
-        try:
-            logger.info(f"Fetching user by ID: {user_id}")
-            user = UserRepository.get_user_by_id(db, user_id)
-            return UserOut.model_validate(user)
-        except NotFoundException:
-            raise
-        except Exception as e:
-            raise BaseAppException(f"Unexpected internal error occured while fetching user by ID: {user_id}") from e
 
-    @staticmethod
-    def get_users(db: Session, offset: int, limit: int) -> Users:
-        try:
+    def __init__(self, db: Session):
+        self.db = db
+    
+
+    def get_user_by_id(self, user_id: int) -> UserOut | None:
+        with get_uow(self.db) as uow:
+            logger.info(f"Fetching user by ID: {user_id}")
+            user = uow.user_repo.get_user_by_id(user_id)
+            return UserOut.model_validate(user)
+        
+
+    def get_users(self, offset: int, limit: int) -> Users:
+        with get_uow(self.db) as uow:
             logger.info("Fetching users from database")
-            users = UserRepository.select_all_users(db, offset, limit)
+            users = uow.user_repo.select_all_users (offset, limit)
             total = len(users)
             users = [UserOut.model_validate(user) for user in users]
             return Users(
@@ -35,42 +35,34 @@ class UserService:
                 limit = limit,
                 data = users 
             )
-        except Exception as e:
-            raise BaseAppException("Unexpected internal error occured while fetching users") from e
+       
     
-    @staticmethod
-    def create_user(db: Session, user_data: UserModel) -> UserOut:
-        try:
+    def create_user(self, user_data: UserModel) -> UserOut:
+        with get_uow(self.db) as uow:
             logger.info("Checking if user with the same username exists")
-            exists = UserRepository.get_user_by_username(db, user_data.username)
+            exists = uow.user_repo.get_user_by_username (user_data.username)
             if exists:
                 raise ConflictException("User with the same username already exists")
-        except Exception as e:
-            raise BaseAppException("Unexpected internal error occured while checking for existing username") from e
-        try: 
+            
             user = User(
                     fullname=user_data.fullname,
                     username = user_data.username, 
-                    password = user_data.password,
+                    password = hash_password(user_data.password),
                     )
-        
-            return UserRepository.create_user(db, user)
-        except Exception as e:
-            raise BaseAppException("Unexpected internal error occured while creating user") from e
+            userout = uow.user_repo.create_user(user)
+            
+            return UserOut.model_validate(userout)
+            
     
-    @staticmethod
-    def update_user(db: Session, user_id: int, user_data: UserPatch) -> UserOut:
-        try:
+    
+    def update_user(self, user_id: int, user_data: UserPatch) -> UserOut:
+        with get_uow(self.db) as uow:
             logger.info(f"Fetching user by ID: {user_id}")
-            user = UserRepository.get_user_by_id(db, user_id)
-        except NotFoundException:
-            raise
-        except Exception as e:
-            raise BaseAppException(f"Unexpected internal error occured while fetching user by ID: {user_id}") from e
+            user = uow.user_repo.get_user_by_id( user_id)
         
-        try:
-            new_data = user_data.model_dump(exclude_unset=True)
-            return UserRepository.update_user(db, user, new_data)
-        except Exception as e:
-            raise BaseAppException("Unexpected internal error occured while updating user") from e
+            try:
+                new_data = user_data.model_dump(exclude_unset=True)
+                return uow.user_repo.update_user(user, new_data)
+            except Exception as e:
+                raise BaseAppException("Unexpected internal error occured while updating user") from e
         

@@ -1,2 +1,2 @@
-from .user_service import UserService
-from .post_service import PostService
+from .user_service import get_user_service, UserService
+from .post_service import get_post_service, PostService

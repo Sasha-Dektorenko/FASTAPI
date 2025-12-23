@@ -10,51 +10,45 @@ logger = logging.getLogger(__name__)
 
 
 class PostsRepository:
-    @staticmethod
-    def get_post_by_id(db: Session, post_id: int) -> PostOut:
-        post = db.get(Post, post_id)
+
+    def __init__(self, db_session: Session):
+        self.db_session = db_session
+
+
+    def get_post_by_id(self, post_id: int) -> PostOut:
+        post = self.db_session.get(Post, post_id)
         if not post:
             raise NotFoundException(f"Post with ID: {post_id} not found")
         return PostOut.model_validate(post) 
         
-        
-        
-    
-    @staticmethod
-    def get_post_by_title(db: Session, title: str) -> Post | None:
+
+    def get_post_by_title(self, title: str) -> Post | None:
         stmt = select(Post).where(Post.title == title)
-        post = db.scalars(stmt).first()
+        post = self.db_session.scalars(stmt).first()
         return post if post else None
         
-        
-    
-    @staticmethod
-    def select_all_posts(db: Session, offset: int, limit: int) -> Sequence[Post]:
+
+    def select_all_posts(self, offset: int, limit: int) -> Sequence[Post]:
         stmt = select(Post).offset(offset).limit(limit)
-        posts = db.scalars(stmt).all()
+        posts = self.db_session.scalars(stmt).all()
         return posts
         
-        
     
-    @staticmethod
-    def create_post(db: Session, post: Post) -> PostOut:
-        db.add(post)
-        db.commit()
-        db.refresh(post)
+    def create_post(self, post: Post) -> PostOut:
+        self.db_session.add(post)
+        self.db_session.flush()
         return PostOut.model_validate(post)
     
-    @staticmethod
-    def update_post(db: Session, post: Post, new_data: dict) -> PostOut:
+    
+    def update_post(self, post: Post, new_data: dict) -> PostOut:
         for key, value in new_data.items():
             setattr(post, key, value)
-        db.commit()
-        db.refresh(post)
+        self.db_session.flush()
         return PostOut.model_validate(post)
     
-    @staticmethod
-    def update_post_users(db: Session, post: Post, user: User) -> PostOut:
+    
+    def update_post_users(self, post: Post, user: User) -> PostOut:
         if user not in post.users:
             post.users.append(user)
-            db.commit()
-            db.refresh(post)
+        self.db_session.flush()
         return PostOut.model_validate(post)

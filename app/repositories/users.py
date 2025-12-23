@@ -10,42 +10,40 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
-
 class UserRepository:
-    @staticmethod
-    def select_all_users(db: Session, offset: int, limit: int) -> Sequence[User]:
+
+    def __init__(self, db_session: Session):
+        self.db_session = db_session
+        
+    
+    def select_all_users(self, offset: int, limit: int) -> Sequence[User]:
         stmt = select(User).offset(offset).limit(limit)
-        users = db.scalars(stmt).all()
+        users = self.db_session.scalars(stmt).all()
         return users
        
-        
-    @staticmethod
-    def create_user(db: Session, user: User) -> UserOut:
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+    
+    def create_user(self, user: User) -> UserOut:
+        self.db_session.add(user)
+        self.db_session.flush()
         return UserOut.model_validate(user)
     
-    @staticmethod
-    def get_user_by_username(db: Session, username: str) -> User | None:
+    
+    def get_user_by_username(self, username: str) -> User | None:
         stmt = select(User).where(User.username == username)
-        user = db.scalars(stmt).first()
+        user = self.db_session.scalars(stmt).first()
         return user if user else None
         
     
-    @staticmethod
-    def get_user_by_id(db: Session, user_id: int) -> User:
-        user = db.get(User, user_id)
+    
+    def get_user_by_id(self, user_id: int) -> User:
+        user = self.db_session.get(User, user_id)
         if not user:
             raise NotFoundException("User not found")
         return user 
         
-    @staticmethod
-    def update_user(db: Session, user: User, new_data: dict) -> UserOut:
+    
+    def update_user(self, user: User, new_data: dict) -> UserOut:
         for key, value in new_data.items():
             setattr(user, key, value)
-        user.updated_at = datetime.now()
-        db.commit()
-        db.refresh(user)
+        self.db_session.flush()
         return UserOut.model_validate(user)
