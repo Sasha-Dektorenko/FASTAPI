@@ -22,10 +22,10 @@ class UserRepository:
         return users
        
     
-    def create_user(self, user: User) -> UserOut:
+    def create_user(self, user: User) -> User:
         self.db_session.add(user)
         self.db_session.flush()
-        return UserOut.model_validate(user)
+        return user
     
     
     def get_user_by_username(self, username: str) -> User | None:
@@ -34,16 +34,13 @@ class UserRepository:
         return user if user else None
         
     
-    
-    def get_user_by_id(self, user_id: int) -> User:
+    def get_user_by_id(self, user_id: int) -> User | None:
         user = self.db_session.get(User, user_id)
-        if not user:
-            raise NotFoundException("User not found")
         return user 
         
     
-    def update_user(self, user: User, new_data: dict) -> UserOut:
+    def update_user(self, user: User, new_data: dict) -> User | None:
         for key, value in new_data.items():
             setattr(user, key, value)
         self.db_session.flush()
-        return UserOut.model_validate(user)
+        return user if user else None

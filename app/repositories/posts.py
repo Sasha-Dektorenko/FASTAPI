@@ -15,11 +15,9 @@ class PostsRepository:
         self.db_session = db_session
 
 
-    def get_post_by_id(self, post_id: int) -> PostOut:
+    def get_post_by_id(self, post_id: int) -> Post | None:
         post = self.db_session.get(Post, post_id)
-        if not post:
-            raise NotFoundException(f"Post with ID: {post_id} not found")
-        return PostOut.model_validate(post) 
+        return post if post else None
         
 
     def get_post_by_title(self, title: str) -> Post | None:
@@ -34,21 +32,21 @@ class PostsRepository:
         return posts
         
     
-    def create_post(self, post: Post) -> PostOut:
+    def create_post(self, post: Post) -> Post:
         self.db_session.add(post)
         self.db_session.flush()
-        return PostOut.model_validate(post)
+        return post
     
     
-    def update_post(self, post: Post, new_data: dict) -> PostOut:
+    def update_post(self, post: Post, new_data: dict) -> Post | None:
         for key, value in new_data.items():
             setattr(post, key, value)
         self.db_session.flush()
-        return PostOut.model_validate(post)
+        return post if post else None
     
     
-    def update_post_users(self, post: Post, user: User) -> PostOut:
+    def update_post_users(self, post: Post, user: User) -> Post | None:
         if user not in post.users:
             post.users.append(user)
         self.db_session.flush()
-        return PostOut.model_validate(post)
+        return post if post else None

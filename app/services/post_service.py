@@ -22,7 +22,9 @@ class PostService:
         with get_uow(self.db) as uow:
             logger.info(f"Fetching post by ID: {post_id}")
             post = uow.post_repo.get_post_by_id(post_id)
-            return post
+            if not post:
+                raise NotFoundException(f"Post with ID: {post_id} not found")
+            return PostOut.model_validate(post)
         
     def get_posts(self, user_id: int, offset: int, limit: int) -> Posts:
         with get_uow(self.db) as uow:
@@ -47,12 +49,15 @@ class PostService:
         with get_uow(self.db) as uow:
             logger.info("Fetching user by ID before creating post")
             user = uow.user_repo.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundException(f"User with ID: {user_id} not found")
 
             logger.info("Checking if post with the same title exists")
             post = uow.post_repo.get_post_by_title(post_data.title)
 
             if post:
-                return uow.post_repo.update_post_users(post, user)
+                postout = uow.post_repo.update_post_users(post, user)
+                return PostOut.model_validate(postout)
                  
 
             post = Post(
@@ -61,7 +66,7 @@ class PostService:
                 users = [user]
                 )
         
-            return uow.post_repo.create_post(post)
+            return PostOut.model_validate(uow.post_repo.create_post(post))
         
 
             

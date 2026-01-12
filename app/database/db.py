@@ -2,10 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session
 from typing import Annotated
 from fastapi import Depends
-import os
-
-
-DB_URL = os.getenv("DB_URL", "sqlite:///./database.db")
+from ..core.config import DB_URL
 
 
 engine = create_engine(DB_URL, echo = True, connect_args={"check_same_thread": False})

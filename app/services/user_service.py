@@ -3,6 +3,7 @@ from ..models import User
 from ..core import BaseAppException, NotFoundException, ConflictException, ValidationException, hash_password
 from ..database import get_uow, SessionDep
 from sqlalchemy.orm import Session
+from .auth_service import AuthService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,8 @@ class UserService:
         with get_uow(self.db) as uow:
             logger.info(f"Fetching user by ID: {user_id}")
             user = uow.user_repo.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundException("User not found")
             return UserOut.model_validate(user)
         
 
@@ -50,7 +53,12 @@ class UserService:
                     password = hash_password(user_data.password),
                     )
             userout = uow.user_repo.create_user(user)
-            
+            token_payload = {
+                "sub": userout.id,
+            }
+            token = AuthService.create_access_token(token_payload)
+
+            print(f"User created with token: {token}")  
             return UserOut.model_validate(userout)
             
     
@@ -58,11 +66,14 @@ class UserService:
     def update_user(self, user_id: int, user_data: UserPatch) -> UserOut:
         with get_uow(self.db) as uow:
             logger.info(f"Fetching user by ID: {user_id}")
-            user = uow.user_repo.get_user_by_id( user_id)
+            user = uow.user_repo.get_user_by_id(user_id)
+            if not user:
+                raise NotFoundException("User not found")
         
             try:
                 new_data = user_data.model_dump(exclude_unset=True)
-                return uow.user_repo.update_user(user, new_data)
+                userout = uow.user_repo.update_user(user, new_data)
+                return UserOut.model_validate(userout)
             except Exception as e:
                 raise BaseAppException("Unexpected internal error occured while updating user") from e
         

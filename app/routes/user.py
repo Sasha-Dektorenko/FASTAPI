@@ -13,10 +13,6 @@ async def get_user(user_id: int, user_service: UserService = Depends(get_user_se
 @user_router.get("/", response_model=Users)
 def get_users(user_service: UserService = Depends(get_user_service), offset:int = 0, limit: int = 5,):
     return user_service.get_users(offset, limit)
-
-@user_router.post("/reg", response_model=UserOut,status_code=201)
-async def create_user(data: UserModel, user_service: UserService = Depends(get_user_service)):
-    return user_service.create_user(data)
     
 @user_router.patch("/update/{user_id}", response_model=UserOut)
 async def update_user(user_id: int, user_data: UserPatch, user_service: UserService = Depends(get_user_service)):
