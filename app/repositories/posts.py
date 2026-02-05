@@ -2,7 +2,7 @@ from sqlalchemy import select
 from ..models import Post, User
 from ..schemas import PostOut
 from typing import Sequence
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 import logging 
 from ..core.exceptions import BaseAppException, NotFoundException
 
@@ -11,42 +11,42 @@ logger = logging.getLogger(__name__)
 
 class PostsRepository:
 
-    def __init__(self, db_session: Session):
+    def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
 
-    def get_post_by_id(self, post_id: int) -> Post | None:
-        post = self.db_session.get(Post, post_id)
+    async def get_post_by_id(self, post_id: int) -> Post | None:
+        post = await self.db_session.get(Post, post_id)
         return post if post else None
         
 
-    def get_post_by_title(self, title: str) -> Post | None:
+    async def get_post_by_title(self, title: str) -> Post | None:
         stmt = select(Post).where(Post.title == title)
-        post = self.db_session.scalars(stmt).first()
-        return post if post else None
+        post = await self.db_session.scalars(stmt)
+        return post.first() if post else None
         
 
-    def select_all_posts(self, offset: int, limit: int) -> Sequence[Post]:
+    async def select_all_posts(self, offset: int, limit: int) -> Sequence[Post]:
         stmt = select(Post).offset(offset).limit(limit)
-        posts = self.db_session.scalars(stmt).all()
-        return posts
+        posts = await self.db_session.scalars(stmt)
+        return posts.all()
         
     
-    def create_post(self, post: Post) -> Post:
+    async def create_post(self, post: Post) -> Post:
         self.db_session.add(post)
-        self.db_session.flush()
+        await self.db_session.flush()
         return post
     
     
-    def update_post(self, post: Post, new_data: dict) -> Post | None:
+    async def update_post(self, post: Post, new_data: dict) -> Post | None:
         for key, value in new_data.items():
             setattr(post, key, value)
-        self.db_session.flush()
+        await self.db_session.flush()
         return post if post else None
     
     
-    def update_post_users(self, post: Post, user: User) -> Post | None:
+    async def update_post_users(self, post: Post, user: User) -> Post | None:
         if user not in post.users:
             post.users.append(user)
-        self.db_session.flush()
+        await self.db_session.flush()
         return post if post else None

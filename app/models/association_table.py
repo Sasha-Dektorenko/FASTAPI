@@ -1,4 +1,4 @@
-from ..database import Base
+from ..database.db import Base
 from sqlalchemy import Table, Column, ForeignKey
 
 association_table = Table(

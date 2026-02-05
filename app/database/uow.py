@@ -1,24 +1,25 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from ..repositories.users import UserRepository
 from ..repositories.posts import PostsRepository    
-from .db import SessionDep
+from fastapi import Depends
+from .db import get_session
 
 class Uow:
-    def __init__(self, db_session: Session):
+    def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
         self.user_repo = UserRepository(db_session)
         self.post_repo = PostsRepository(db_session)
 
-    def __enter__(self):
+    async def __aenter__(self):
         return self
     
-    def __exit__(self, exc_type, exc_value, traceback):
+    async def __aexit__(self, exc_type, exc_value, traceback):
         if exc_type is not None:
-            self.db_session.rollback()
+            await self.db_session.rollback()
         else:
-            self.db_session.commit()
+            await self.db_session.commit()
 
-        self.db_session.close()
+        await self.db_session.close()
 
-def get_uow(session: SessionDep) -> Uow:
+def get_uow(session: AsyncSession = Depends(get_session)) -> Uow:
     return Uow(session)

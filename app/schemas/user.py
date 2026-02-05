@@ -7,7 +7,7 @@ class UserModel(BaseModel):
     password: str
 
 class UserOut(BaseModel):
-    id: int
+    id: str
     fullname: str
     username: str
     created_at: datetime

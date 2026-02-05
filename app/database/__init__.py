@@ -1,2 +1,1 @@
-from .db import Base, engine, SessionDep
-from .uow import get_uow, Uow
+from .db import Base, engine, get_session

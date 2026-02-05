@@ -1,5 +1,5 @@
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from ..core.config import SECRET_KEY, EXPIRES_TIME, ALGORITHM
 
 class AuthService:
@@ -7,8 +7,10 @@ class AuthService:
     @staticmethod
     def create_access_token(data:dict) -> str:
         to_encode = data.copy()
-        expire = datetime.now() + timedelta(minutes=EXPIRES_TIME)
-        to_encode.update({"exp": expire})
+        expire = datetime.now(timezone.utc) + timedelta(seconds=EXPIRES_TIME)
+        to_encode.update({"exp": int(expire.timestamp())})
+        if "sub" in to_encode:
+            to_encode["sub"] = str(to_encode["sub"])
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
     
